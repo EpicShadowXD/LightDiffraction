@@ -1,0 +1,91 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define the size of the aperture in meters
+L = 1e-3
+
+# Define the number of pixels in the aperture
+N = 256
+
+# Define the wavelength of the light in meters
+wavelength = 500e-9
+
+# Define the distance from the aperture to the screen in meters
+distance = 1e-3
+
+# Create a 2D grid of points representing the aperture
+x = np.linspace(-L/2, L/2, N)
+y = np.linspace(-L/2, L/2, N)
+xx, yy = np.meshgrid(x, y)
+aperture = np.ones((N, N))
+aperture[np.abs(xx) > L/4] = 0
+
+# Compute the Fourier transform of the aperture
+fourier = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(aperture)))
+
+# Compute the diffraction pattern on the screen
+dx = L/N
+dy = L/N
+x2 = np.linspace(-dx*N/2, dx*N/2, N)
+y2 = np.linspace(-dy*N/2, dy*N/2, N)
+xx2, yy2 = np.meshgrid(x2, y2)
+screen = np.exp(1j * 2*np.pi/wavelength/distance * (xx2**2 + yy2**2))
+diffraction = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(fourier * screen)))
+
+# Plot the aperture and diffraction pattern
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+ax1.imshow(aperture, cmap='hot')
+ax1.set_title('Aperture')
+ax2.imshow(np.abs(diffraction)**2, cmap='hot')
+ax2.set_title('Diffraction Pattern')
+
+# ax1.view_init(elev=30, azim=-30)
+# ax2.view_init(elev=30, azim=-30)
+
+plt.show()
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+def aperture(x, y, radius):
+    r = np.sqrt(x**2 + y**2)
+    return np.where(r <= radius, 1, 0)
+
+def diffraction_pattern(aperture, distance, wavelength):
+    k = 2 * np.pi / wavelength
+    fx, fy = np.fft.fftfreq(aperture.shape[0]), np.fft.fftfreq(aperture.shape[1])
+    fx, fy = np.meshgrid(fx, fy)
+    kernel = np.exp(1j * k * distance) / (1j * wavelength * distance) * np.exp(-1j * np.pi * wavelength * distance * (fx**2 + fy**2))
+    pattern = np.fft.fft2(aperture) * kernel
+    pattern = np.fft.fftshift(pattern)
+    intensity = np.abs(pattern)**2
+    return intensity
+
+x = np.linspace(-0.001, 0.001, 512)
+y = np.linspace(-0.001, 0.001, 512)
+X, Y = np.meshgrid(x, y)
+aperture_radius = 0.0005
+aperture_array = aperture(X, Y, aperture_radius)
+distance = 0.001
+wavelength = 500e-9
+intensity = diffraction_pattern(aperture_array, distance, wavelength)
+
+colors = ['purple', 'green', 'yellow']
+color_array = np.zeros_like(intensity, dtype=object)
+for i in range(1, 4):
+    color_array[intensity > 0.1 * i] = colors[i-1]
+
+fig = plt.figure(figsize=(10, 10))
+ax1 = fig.add_subplot(121, projection='3d')
+ax1.plot_surface(X, Y, aperture_array, cmap='gray', alpha=0.9)
+ax1.set_title('Aperture')
+ax2 = fig.add_subplot(122, projection='3d')
+ax2.plot_surface(X, Y, intensity, facecolors=color_array, alpha=0.9)
+ax2.set_title('Diffraction Pattern')
+
+ax1.view_init(elev=30, azim=-30)
+ax2.view_init(elev=30, azim=-30)
+
+plt.show()
+"""
